@@ -1,3 +1,6 @@
+import numpy as np
+from PIL import Image
+
 def blur(image):
     """
     Blurs the images by passing multiple gaussian blur filters over and averaging
@@ -20,8 +23,37 @@ def get_samples(filename, sample_res, max_stride, should_blur=False):
     a blurred image with the same filename that we can pull from
     :return: None, save the files to a desired output directory
     """
-    raise NotImplementedError()
+    with Image.open(filename, 'r') as image:
+        pixels = list(image.getdata())
+        v_res, h_res = image.size
+        pixel_dimension = len(pixels[0])
+        pixels = np.reshape(pixels, (v_res, h_res, pixel_dimension))
+        if should_blur:
+            pixels, _ = blur(pixels)
+        hbound, vbound = h_res - sample_res, v_res - sample_res
+        horizontal_starts = [i for i in range(hbound) if i % max_stride == 0]
+        vertical_starts = [i for i in range(vbound) if i % max_stride == 0]
+        # Catch the trailing final samples if necessary
+        if hbound not in horizontal_starts:
+            horizontal_starts.append(hbound)
+        if vbound not in vertical_starts:
+            vertical_starts.append(vbound)
 
+        sample_num = 0
+        for h in horizontal_starts:
+            for v in vertical_starts:
+                # Following StackOverflow on dtype here
+                sample = np.array(pixels[v:v+sample_res, h:h+sample_res], dtype=np.uint8)
+                with Image.fromarray(sample) as sample_image:
+                    # I dislike hardcoding an output directory and think it should be
+                    # a function param
+                    sample_image.save('samples/{0}_{1}res_{2}.png'.format(filename, sample_res, sample_num))
+                    sample_num += 1
+
+        print('Sampling for image {0} complete'.format(filename))
+    return
+
+    
 def main():
     """
     Iterates over images in dataset to process them
