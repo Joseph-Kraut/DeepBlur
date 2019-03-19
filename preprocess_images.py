@@ -1,15 +1,73 @@
 import numpy as np
 from PIL import Image
+import scipy.signal as signal
+from math import pi, e
 
-def blur(image):
+def gaussian_blur_kernel(kernel_size, standard_deviation):
+    """
+    Generates a gaussian blur filter of type numpy array
+    :param kernel_size: The desired dimension of the filter (odd number)
+    :return: The kernel as a numpy array
+    """
+    # The location of the kernel center
+    kernel_center = [int(kernel_size / 2), int(kernel_size / 2)]
+
+    kernel = np.zeros((kernel_size, kernel_size))
+
+    # Loop over the elements in the array
+    for row in range(kernel.shape[0]):
+        for column in range(kernel.shape[1]):
+            # Compute the gaussian value at this point
+            exponent = -((row - kernel_center[0]) ** 2 + (column - kernel_center[0]) ** 2) / (2 * standard_deviation ** 2)
+            z_score = e ** exponent / (2 * pi * standard_deviation ** 2)
+
+            # Add this z_score to the kernel
+            kernel[row][column] = z_score
+
+    # Normalize the kernel to become a convex combination before returning
+    kernel = kernel / np.sum(kernel)
+
+    return kernel
+
+
+def blur(image, number_filters=10, standard_deviation=50):
     """
     Blurs the images by passing multiple gaussian blur filters over and averaging
     :param image: A numpy array corresponding to the image
+    :param number_filters: The number of randomly selected blur filters to convolve over the image
     :return: A tuple containing
         - The blurred image
         - The kernels used to blur stacked depth wise
     """
-    raise NotImplementedError()
+    filter_sizes = [3, 5, 7, 9, 11]
+    filter_probabilities = [0.45, 0.45, 0.1]
+
+    # Loop over the number of filters
+    for _ in range(number_filters):
+        # Select a filter size
+        filter_size = np.random.choice(filter_sizes)
+        print(f"Blurring with kernel of size: {filter_size}")
+
+        # Generate a gaussian blur filter of size filter_size x filter_size
+        kernel = gaussian_blur_kernel(filter_size, standard_deviation)
+
+        # Stack the kernel along the channel dimension
+        # Blur each channel
+        channels = []
+        for channel_index in range(image.shape[2]):
+            # Get the current channel
+            channel = image[:, :, channel_index]
+            # Blur it
+            channel = signal.convolve(channel, kernel, mode='same')
+            # Add the channel to the list of blurred channels
+            channels += [channel]
+
+
+        # Reform blurred channels into image
+    image = np.transpose(np.array(channels), (1, 2, 0))
+
+    return image.astype(int)
+
 
 def get_samples(filename, sample_res, max_stride, should_blur=False):
     """
