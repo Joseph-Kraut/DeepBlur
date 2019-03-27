@@ -1,7 +1,8 @@
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
+from tensorflow.python import pywrap_tensorflow
 
-class UNet():
+class UNet:
     """
     This class implements a UNet from https://bit.ly/2UAvptW
     """
@@ -12,8 +13,6 @@ class UNet():
         :param pretrained:
         :param learning_rate:
         """
-        # Make a call to the build_model
-        self.sess = tf.Session()
 
         # Printout
         if pretrained:
@@ -21,8 +20,8 @@ class UNet():
         else:
             print("Building new UNet model...")
 
+        # Build the model
         self.build_model(pretrained, learning_rate)
-
 
     def build_model(self, pretrained, learning_rate):
         """
@@ -31,6 +30,10 @@ class UNet():
         :param pretrained: Whether or not to pull from pretrained models
         :return: None
         """
+        # Cleanup graph
+        tf.reset_default_graph()
+        self.sess = tf.Session()
+
         # Placeholders for inputs and labels
         self.input_placeholder = tf.placeholder(dtype=tf.float32, shape=[None, None, None, 3])
         self.labels = tf.placeholder(dtype=tf.float32, shape=[None, None, None, 3])
@@ -79,6 +82,7 @@ class UNet():
         conv8 = slim.conv2d(conv8, 64, [3, 3], rate=1, activation_fn=tf.nn.elu, scope='g_conv8_2')
 
         up9 = upsample_and_concat(conv8, conv1, 32, 64)
+
         conv9 = slim.conv2d(up9, 32, [3, 3], rate=1, activation_fn=tf.nn.elu, scope='g_conv9_1')
         conv9 = slim.conv2d(conv9, 32, [3, 3], rate=1, activation_fn=tf.nn.elu, scope='g_conv9_2')
 
@@ -86,14 +90,50 @@ class UNet():
 
         self.output = conv10
 
-        self.loss = tf.losses.mean_squared_error(self.labels, self.output)
-        optimizer = tf.train.RMSPropOptimizer(learning_rate)
-        self.train_op = optimizer.minimize(self.loss)
-
+        # Load pre-trained weights
         if pretrained:
-            raise NotImplementedError()
+            # This gets all the weights except all the 10th layer or first layer filters
+            pre_trained_variables = [var for var in tf.trainable_variables()
+                                     if var.name != "g_conv1_1/weights:0" and not var.name.startswith("g_conv10")]
+
+            # Restore the variables we require
+            saver = tf.train.Saver(pre_trained_variables)
+            saver.restore(self.sess, "./checkpoints/model.ckpt")
+
+            # Restore the first layer weights by removing one channel (the alpha channel)
+            # Pull the value of the first layer weights and remove the last channel
+            reader = pywrap_tensorflow.NewCheckpointReader("./checkpoints/model.ckpt")
+            first_layer_weights = reader.get_tensor("g_conv1_1/weights")
+            first_layer_weights = first_layer_weights[:, :, :3, :]
+
+            # Setup the uninitialized weights
+            uninitialized = [var for var in tf.trainable_variables() if (var.name.startswith("g_conv10") or var.name == 'g_conv1_1/weights:0')]
+            self.sess.run(tf.initialize_variables(uninitialized))
+
+            # Set the first layer weights equal to the weights we just pulled
+            conv1_weights = [var for var in tf.global_variables() if var.name == 'g_conv1_1/weights:0'][0]
+            self.sess.run(conv1_weights.assign(first_layer_weights))
+
+            # Build the loss and frozen optimizer
+            self.loss = tf.losses.mean_squared_error(self.labels, self.output)
+            optimizer = tf.train.RMSPropOptimizer(learning_rate)
+
+            # Get the variables that we will train in pretrained model
+            trainables = [var for var in tf.trainable_variables() if
+                          (var.name.startswith("g_conv9") or var.name.startswith("g_conv10"))]
+            trainable_gradients = optimizer.compute_gradients(self.loss, var_list=trainables)
+            self.train_op = optimizer.apply_gradients(trainable_gradients)
+
         else:
+            # If we aren't using pre-trained weights then we can just skip this part
             self.sess.run(tf.global_variables_initializer())
+            self.loss = tf.losses.mean_squared_error(self.labels, self.output)
+            optimizer = tf.train.RMSPropOptimizer(learning_rate)
+            self.train_op = optimizer.minimize(self.loss)
+
+        # Init the variables relevant to the optimizer
+        optimizer_init = tf.variables_initializer(optimizer.variables())
+        self.sess.run(optimizer_init)
 
     def evaluate(self, inputs, ground_truth):
         """
@@ -135,4 +175,3 @@ class UNet():
 
         loss_value, _ = self.sess.run((self.loss, self.train_op), feed_dict=feed_dict)
         return loss_value
-
