@@ -10,8 +10,8 @@ class UNet:
     def __init__(self, pretrained=False, learning_rate=1e-3):
         """
         Sets up the model for training and inference
-        :param pretrained:
-        :param learning_rate:
+        :param pretrained: Whether or not to use pretrained weights
+        :param learning_rate: The learning rate for training
         """
 
         # Printout
@@ -38,7 +38,7 @@ class UNet:
         self.input_placeholder = tf.placeholder(dtype=tf.float32, shape=[None, None, None, 3])
         self.labels = tf.placeholder(dtype=tf.float32, shape=[None, None, None, 3])
 
-        # This code is modified from
+        # This code is modified from https://bit.ly/2UAvptW
         def upsample_and_concat(x1, x2, output_channels, in_channels):
             pool_size = 2
             deconv_filter = tf.Variable(
