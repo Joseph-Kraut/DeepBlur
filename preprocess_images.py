@@ -82,10 +82,10 @@ def get_samples(filename, sample_res, max_stride, should_blur=False):
     :return: None, save the files to a desired output directory
     """
     with Image.open(filename, 'r') as image:
-        pixels = list(image.getdata())
-        v_res, h_res = image.size
-        pixel_dimension = len(pixels[0])
-        pixels = np.reshape(pixels, (v_res, h_res, pixel_dimension))
+        pixels = np.array(image)
+        v_res = pixels.shape[0]
+        h_res = pixels.shape[1]
+
         if should_blur:
             pixels, _ = blur(pixels)
         hbound, vbound = h_res - sample_res, v_res - sample_res
