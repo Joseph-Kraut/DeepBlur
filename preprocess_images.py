@@ -111,12 +111,13 @@ def get_samples(filename, sample_res, max_stride, should_blur=False):
         print('Sampling for image {0} complete'.format(filename))
     return
 
-    
+
 def main():
     """
     Iterates over images in dataset to process them
     :return: None
     """
+    
     raise NotImplementedError()
 
 
