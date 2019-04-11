@@ -175,3 +175,12 @@ class UNet:
 
         loss_value, _ = self.sess.run((self.loss, self.train_op), feed_dict=feed_dict)
         return loss_value
+
+    def save_model(self):
+        """
+        Saves the model in the checkpoints folder
+        :return: None
+        """
+        print("Saving model...")
+        saver = tf.train.Saver()
+        saver.save(self.sess, "./checkpoints/UNet")
