@@ -1,4 +1,5 @@
 import numpy as np
+import os
 from PIL import Image
 import scipy.signal as signal
 from math import pi, e
@@ -69,7 +70,7 @@ def blur(image, number_filters=10, standard_deviation=50):
     return image.astype(int)
 
 
-def get_samples(filename, sample_res, max_stride, should_blur=False, save_dir=):
+def get_samples(filename, sample_res, max_stride, should_blur=False, output_dir='samples'):
     """
     Gets the samples of size sample_res x sample_res from the image specified
     :param filename: The local path to the image (i.e. './path/to/image.png')
@@ -87,7 +88,7 @@ def get_samples(filename, sample_res, max_stride, should_blur=False, save_dir=):
         h_res = pixels.shape[1]
 
         if should_blur:
-            pixels, _ = blur(pixels)
+            pixels = blur(pixels)
         hbound, vbound = h_res - sample_res, v_res - sample_res
         horizontal_starts = [i for i in range(hbound) if i % max_stride == 0]
         vertical_starts = [i for i in range(vbound) if i % max_stride == 0]
@@ -103,9 +104,8 @@ def get_samples(filename, sample_res, max_stride, should_blur=False, save_dir=):
                 # Following StackOverflow on dtype here
                 sample = np.array(pixels[v:v+sample_res, h:h+sample_res], dtype=np.uint8)
                 with Image.fromarray(sample) as sample_image:
-                    # I dislike hardcoding an output directory and think it should be
-                    # a function param
-                    sample_image.save('samples/{0}_{1}res_{2}.png'.format(filename, sample_res, sample_num))
+                    sample_image.save(os.path.join(output_dir,
+                                    '{0}_{1}res_{2}.png'.format(filename, sample_res, sample_num)))
                     sample_num += 1
 
         print('Sampling for image {0} complete'.format(filename))
