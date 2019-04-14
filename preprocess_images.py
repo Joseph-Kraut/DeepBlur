@@ -69,7 +69,7 @@ def blur(image, number_filters=10, standard_deviation=50):
     return image.astype(int)
 
 
-def get_samples(filename, sample_res, max_stride, should_blur=False):
+def get_samples(filename, sample_res, max_stride, should_blur=False, save_dir=):
     """
     Gets the samples of size sample_res x sample_res from the image specified
     :param filename: The local path to the image (i.e. './path/to/image.png')
@@ -117,8 +117,8 @@ def main():
     Iterates over images in dataset to process them
     :return: None
     """
-    
-    raise NotImplementedError()
+    raw_img_dir_path = "Raw_Images/"
+    save_dir = "Labelled_Patches/Blurred"
 
 
 if __name__ == "__main__":
