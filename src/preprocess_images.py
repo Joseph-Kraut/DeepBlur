@@ -3,6 +3,9 @@ import os
 from PIL import Image
 import scipy.signal as signal
 from math import pi, e
+from os import listdir
+from os.path import join, isfile
+import re
 
 def gaussian_blur_kernel(kernel_size, standard_deviation):
     """
@@ -103,21 +106,44 @@ def get_samples(filename, sample_res, max_stride, should_blur=False, output_dir=
             for v in vertical_starts:
                 # Following StackOverflow on dtype here
                 sample = np.array(pixels[v:v+sample_res, h:h+sample_res], dtype=np.uint8)
+                output_filename = re.split("/|_", filename)[-1]
                 with Image.fromarray(sample) as sample_image:
-                    sample_image.save(os.path.join(output_dir,
-                                    '{0}_{1}res_{2}.png'.format(filename, sample_res, sample_num)))
+                    sample_image.save(join(output_dir,
+                                    '{0}_{1}res_{2}.png'.format(output_filename, sample_res, sample_num)))
                     sample_num += 1
 
         print('Sampling for image {0} complete'.format(filename))
     return
 
-    
+
 def main():
     """
     Iterates over images in dataset to process them
     :return: None
     """
-    raise NotImplementedError()
+    ALREADY_BLURRED = True #Set to true if you want to blur new images
+    SAMPLE_RES = 300 #The resolution (side length) of the square patches
+    MAX_STRIDE = 180 #How much each sample overlaps by determines overlap
+
+    sharp_img_dir = "../data/raw_images/ground_truth" #Assumes ground truth files or unblurred imgs stored here
+    blurred_img_dir = "../data/raw_images/blurry" #Assumes blurred files (if already blurred) stored here
+    #NOTE: blurred image filenames should end (last chars after a "/" or "_") with the same name as unblurred images
+
+    blur_save_dir = "../data/labelled_patches/blurred" #Where blurred images should be saved
+    truth_save_dir = "../data/labelled_patches/sharp" #Where unblurred images should be saved
+
+    if ALREADY_BLURRED:
+        blurred_img_filenames = [join(blurred_img_dir, f) for f in listdir(blurred_img_dir) if isfile(join(blurred_img_dir, f))]
+        sharp_img_filenames = [join(sharp_img_dir, f) for f in listdir(sharp_img_dir) if isfile(join(sharp_img_dir, f))]
+        for sharp_img, blurred_img in zip(sharp_img_filenames, blurred_img_filenames):
+            get_samples(sharp_img, SAMPLE_RES, MAX_STRIDE, should_blur=False, output_dir=truth_save_dir)
+            get_samples(blurred_img, SAMPLE_RES, MAX_STRIDE, should_blur=False, output_dir=blur_save_dir)
+    else:
+        sharp_img_filenames = [join(sharp_img_dir, f) for f in listdir(sharp_img_dir) if isfile(join(sharp_img_dir, f))]
+        for sharp_img in sharp_img_filenames:
+            get_samples(sharp_img, SAMPLE_RES, MAX_STRIDE, should_blur=False, output_dir=truth_save_dir)
+            get_samples(sharp_img, SAMPLE_RES, MAX_STRIDE, should_blur=True, output_dir=blur_save_dir)
+
 
 
 if __name__ == "__main__":
