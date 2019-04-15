@@ -2,6 +2,8 @@
 import numpy as np
 import os
 from PIL import Image
+import matplotlib.pyplot as plt
+from .UNet import UNet
 
 
 def build_batch(blur_dir, truth_dir, batch_size):
@@ -29,6 +31,44 @@ def build_batch(blur_dir, truth_dir, batch_size):
                 with Image.open(os.path.join(truth_dir, filename), 'r') as truthy:
                     truth_batch.append(np.array(truthy))
             yield blur_batch, truth_batch
+
+
+def train_model(model, train_steps, input_dir, labels_dir, batch_size=16, print_every=50, save=True, graph=False):
+    """
+    Trains a given model on training data
+    :param model: The model to train
+    :param train_steps: the number of gradient steps to take in training
+    :param print_every: How often to print out the loss
+    :param graph: Whether or not to graph a loss vs train step plot at the end
+    :return: None
+    """
+    # Build the batch generator
+    batch_generator = build_batch(input_dir, labels_dir, batch_size)
+    losses = []
+
+    # Loop over the training steps
+    for train_step in range(train_steps):
+        # Sample a batch
+        input_batch, labels_batch = next(batch_generator)
+
+        # Take a train step on this batch
+        loss_value = model.train_step(input_batch, labels_batch)
+
+        # Possibly print the loss
+        if train_step % print_every == 0:
+            print(f"Loss on train step {train_step}: {loss_value}")
+
+        losses += [loss_value]
+
+    if save:
+        model.save_model()
+
+    if graph:
+        plt.plot(range(len(losses)), losses)
+
+
+
+
         
 
 
