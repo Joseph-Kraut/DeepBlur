@@ -3,7 +3,6 @@ import numpy as np
 import os
 from PIL import Image
 import matplotlib.pyplot as plt
-from .UNet import UNet
 
 
 def build_batch(blur_dir, truth_dir, batch_size):
@@ -30,10 +29,10 @@ def build_batch(blur_dir, truth_dir, batch_size):
                     blur_batch.append(np.array(blurry))
                 with Image.open(os.path.join(truth_dir, filename), 'r') as truthy:
                     truth_batch.append(np.array(truthy))
-            yield blur_batch, truth_batch
+            yield np.array(blur_batch), np.array(truth_batch)
 
 
-def train_model(model, train_steps, input_dir, labels_dir, batch_size=16, print_every=50, save=True, graph=False):
+def train_model(model, train_steps, blur_dir, truth_dir, batch_size=16, print_every=50, save=True, graph=False):
     """
     Trains a given model on training data
     :param model: The model to train
@@ -43,13 +42,14 @@ def train_model(model, train_steps, input_dir, labels_dir, batch_size=16, print_
     :return: None
     """
     # Build the batch generator
-    batch_generator = build_batch(input_dir, labels_dir, batch_size)
+    batch_generator = build_batch(blur_dir, truth_dir, batch_size)
     losses = []
 
     # Loop over the training steps
     for train_step in range(train_steps):
         # Sample a batch
         input_batch, labels_batch = next(batch_generator)
+        print(input_batch.shape)
 
         # Take a train step on this batch
         loss_value = model.train_step(input_batch, labels_batch)

@@ -109,7 +109,8 @@ def get_samples(filename, sample_res, max_stride, should_blur=False, output_dir=
                 output_filename = re.split("/|_", filename)[-1]
                 with Image.fromarray(sample) as sample_image:
                     sample_image.save(join(output_dir,
-                                    '{0}_{1}res_{2}.png'.format(output_filename, sample_res, sample_num)))
+                                    '{0}_{1}res_{2}.png'.format(output_filename, sample_res, sample_num)),
+                                    'PNG')
                     sample_num += 1
 
         print('Sampling for image {0} complete'.format(filename))
@@ -124,6 +125,7 @@ def main():
     ALREADY_BLURRED = True #Set to true if you want to blur new images
     SAMPLE_RES = 300 #The resolution (side length) of the square patches
     MAX_STRIDE = 180 #How much each sample overlaps by determines overlap
+    CLEAR_SAVE_DIR = True # Deletes pre-existing files in save directory
 
     sharp_img_dir = "../data/raw_images/ground_truth" #Assumes ground truth files or unblurred imgs stored here
     blurred_img_dir = "../data/raw_images/blurry" #Assumes blurred files (if already blurred) stored here
@@ -132,9 +134,15 @@ def main():
     blur_save_dir = "../data/labelled_patches/blurred" #Where blurred images should be saved
     truth_save_dir = "../data/labelled_patches/sharp" #Where unblurred images should be saved
 
+    if CLEAR_SAVE_DIR:
+        for filename in listdir(blur_save_dir):
+            os.unlink(os.path.join(blur_save_dir, filename))
+        for filename in listdir(truth_save_dir):
+            os.unlink(os.path.join(truth_save_dir, filename))
+
     if ALREADY_BLURRED:
-        blurred_img_filenames = [join(blurred_img_dir, f) for f in listdir(blurred_img_dir) if isfile(join(blurred_img_dir, f))]
-        sharp_img_filenames = [join(sharp_img_dir, f) for f in listdir(sharp_img_dir) if isfile(join(sharp_img_dir, f))]
+        blurred_img_filenames = [join(blurred_img_dir, f) for f in sorted(listdir(blurred_img_dir))[:500] if isfile(join(blurred_img_dir, f))]
+        sharp_img_filenames = [join(sharp_img_dir, f) for f in sorted(listdir(sharp_img_dir))[:500] if isfile(join(sharp_img_dir, f))]
         for sharp_img, blurred_img in zip(sharp_img_filenames, blurred_img_filenames):
             get_samples(sharp_img, SAMPLE_RES, MAX_STRIDE, should_blur=False, output_dir=truth_save_dir)
             get_samples(blurred_img, SAMPLE_RES, MAX_STRIDE, should_blur=False, output_dir=blur_save_dir)
