@@ -141,8 +141,8 @@ def main():
             os.unlink(os.path.join(truth_save_dir, filename))
 
     if ALREADY_BLURRED:
-        blurred_img_filenames = [join(blurred_img_dir, f) for f in sorted(listdir(blurred_img_dir))[:1000] if isfile(join(blurred_img_dir, f))]
-        sharp_img_filenames = [join(sharp_img_dir, f) for f in sorted(listdir(sharp_img_dir))[:1000] if isfile(join(sharp_img_dir, f))]
+        blurred_img_filenames = [join(blurred_img_dir, f) for f in sorted(listdir(blurred_img_dir)) if isfile(join(blurred_img_dir, f))]
+        sharp_img_filenames = [join(sharp_img_dir, f) for f in sorted(listdir(sharp_img_dir)) if isfile(join(sharp_img_dir, f))]
         for sharp_img, blurred_img in zip(sharp_img_filenames, blurred_img_filenames):
             get_samples(sharp_img, SAMPLE_RES, MAX_STRIDE, should_blur=False, output_dir=truth_save_dir)
             get_samples(blurred_img, SAMPLE_RES, MAX_STRIDE, should_blur=False, output_dir=blur_save_dir)
