@@ -106,7 +106,7 @@ def get_samples(filename, sample_res, max_stride, should_blur=False, output_dir=
             for v in vertical_starts:
                 # Following StackOverflow on dtype here
                 sample = np.array(pixels[v:v+sample_res, h:h+sample_res], dtype=np.uint8)
-                output_filename = re.split("/|_", filename)[-1]
+                output_filename = re.split("/|_", os.path.splitext(filename)[0])[-1]
                 with Image.fromarray(sample) as sample_image:
                     sample_image.save(join(output_dir,
                                     '{0}_{1}res_{2}.png'.format(output_filename, sample_res, sample_num)),
@@ -141,8 +141,8 @@ def main():
             os.unlink(os.path.join(truth_save_dir, filename))
 
     if ALREADY_BLURRED:
-        blurred_img_filenames = [join(blurred_img_dir, f) for f in sorted(listdir(blurred_img_dir))[:500] if isfile(join(blurred_img_dir, f))]
-        sharp_img_filenames = [join(sharp_img_dir, f) for f in sorted(listdir(sharp_img_dir))[:500] if isfile(join(sharp_img_dir, f))]
+        blurred_img_filenames = [join(blurred_img_dir, f) for f in sorted(listdir(blurred_img_dir))[:1000] if isfile(join(blurred_img_dir, f))]
+        sharp_img_filenames = [join(sharp_img_dir, f) for f in sorted(listdir(sharp_img_dir))[:1000] if isfile(join(sharp_img_dir, f))]
         for sharp_img, blurred_img in zip(sharp_img_filenames, blurred_img_filenames):
             get_samples(sharp_img, SAMPLE_RES, MAX_STRIDE, should_blur=False, output_dir=truth_save_dir)
             get_samples(blurred_img, SAMPLE_RES, MAX_STRIDE, should_blur=False, output_dir=blur_save_dir)
