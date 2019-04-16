@@ -46,33 +46,30 @@ def train_model(model, train_steps, blur_dir, truth_dir, batch_size=16, print_ev
     losses = []
 
     # Loop over the training steps
-    for train_step in range(train_steps):
-        # Sample a batch
-        input_batch, labels_batch = next(batch_generator)
-        # H4x0rs
-        input_batch = np.reshape(input_batch, (*input_batch.shape, 1))
-        labels_batch = np.reshape(input_batch, (*labels_batch.shape, 1))
-        print(input_batch.shape)
-        # Take a train step on this batch
-        loss_value = model.train_step(input_batch, labels_batch)
+    with open("training_log.txt", "w+") as logfile:
+        for train_step in range(train_steps):
+            # Sample a batch
+            input_batch, labels_batch = next(batch_generator)
+            # H4x0rs
+            input_batch = np.reshape(input_batch, (*input_batch.shape, 1))
+            labels_batch = np.reshape(input_batch, (*labels_batch.shape, 1))
+            print(input_batch.shape)
+            # Take a train step on this batch
+            loss_value = model.train_step(input_batch, labels_batch)
 
-        # Possibly print the loss
-        if train_step % print_every == 0:
-            print(f"Loss on train step {train_step}: {loss_value}")
+            # Possibly print the loss
+            if train_step % print_every == 0:
+                print(f"Loss on train step {train_step}: {loss_value}\n")
+                logfile.write(f"Loss on train step {train_step}: {loss_value}\n")
+            if save and train_step % 10 == 0:
+                logfile.flush()
+                model.save_model()
 
-        losses += [loss_value]
+            losses += [loss_value]
 
     if save:
         model.save_model()
 
     if graph:
         plt.plot(range(len(losses)), losses)
-
-
-
-
-        
-
-
-
 

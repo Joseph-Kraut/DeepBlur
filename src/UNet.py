@@ -115,7 +115,8 @@ class UNet:
             self.sess.run(conv1_weights.assign(first_layer_weights))
 
             # Build the loss and frozen optimizer
-            self.loss = tf.losses.mean_squared_error(self.labels, self.output)
+            self.loss = tf.losses.mean_squared_error(self.labels, self.output) \
+                + tf.losses.mean_pairwise_squared_error(self.labels, self.output)
             optimizer = tf.train.RMSPropOptimizer(learning_rate)
 
             # Get the variables that we will train in pretrained model
