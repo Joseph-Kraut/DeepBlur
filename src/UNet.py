@@ -35,8 +35,8 @@ class UNet:
         self.sess = tf.Session()
 
         # Placeholders for inputs and labels
-        self.input_placeholder = tf.placeholder(dtype=tf.float32, shape=[None, None, None, 3])
-        self.labels = tf.placeholder(dtype=tf.float32, shape=[None, None, None, 3])
+        self.input_placeholder = tf.placeholder(dtype=tf.float32, shape=[None, None, None, 1])
+        self.labels = tf.placeholder(dtype=tf.float32, shape=[None, None, None, 1])
 
         # This code is modified from https://bit.ly/2UAvptW
         def upsample_and_concat(x1, x2, output_channels, in_channels):
@@ -86,7 +86,7 @@ class UNet:
         conv9 = slim.conv2d(up9, 32, [3, 3], rate=1, activation_fn=tf.nn.elu, scope='g_conv9_1')
         conv9 = slim.conv2d(conv9, 32, [3, 3], rate=1, activation_fn=tf.nn.elu, scope='g_conv9_2')
 
-        conv10 = slim.conv2d(conv9, 3, [1, 1], rate=1, activation_fn=None, scope='g_conv10')
+        conv10 = slim.conv2d(conv9, 1, [1, 1], rate=1, activation_fn=None, scope='g_conv10')
 
         self.output = conv10
 
@@ -183,4 +183,4 @@ class UNet:
         """
         print("Saving model...")
         saver = tf.train.Saver()
-        saver.save(self.sess, "./checkpoints/UNet")
+        saver.save(self.sess, "./checkpoints/model.ckpt")
