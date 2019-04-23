@@ -2,7 +2,7 @@ import pipeline
 import UNet
 
 model = UNet.UNet()
-train_steps = 100
+train_steps = 300
 blur_dir = '../data/labelled_patches/blurred'
 truth_dir = '../data/labelled_patches/sharp'
 

@@ -32,9 +32,11 @@ class UNet:
         """
         # Cleanup graph
         tf.reset_default_graph()
-        self.sess = tf.Session()
-
+        config = tf.ConfigProto(log_device_placement=True)
+        config.gpu_options.allow_growth = True
+        self.sess = tf.Session(config=config)
         # Placeholders for inputs and labels
+        # with tf.device('/device:GPU:0'):
         self.input_placeholder = tf.placeholder(dtype=tf.float32, shape=[None, None, None, 1])
         self.labels = tf.placeholder(dtype=tf.float32, shape=[None, None, None, 1])
 
@@ -176,8 +178,7 @@ class UNet:
             self.labels: ground_truth
         }
 
-        loss_value, _ = self.sess.run((self.loss, self.train_op), feed_dict=feed_dict,
-          config=tf.ConfigProto(log_device_placement=True))
+        loss_value, _ = self.sess.run((self.loss, self.train_op), feed_dict=feed_dict)
         return loss_value
 
     def save_model(self):
