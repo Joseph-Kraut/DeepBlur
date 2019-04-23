@@ -1,4 +1,5 @@
 import tensorflow as tf
+import tensorflow.contrib.slim as slim
 
 class PatchGAN:
 
@@ -35,7 +36,7 @@ class PatchGAN:
             # The input to the generator
             self.generator_input = tf.placeholder(shape=[None, None, None, 3], dtype=tf.float32)
 
-            # Build the generator graph
+            # Build the generator graphs
             self.generator_output = self._build_generator(self.generator_input)
             self.generator_labels = tf.placeholder(shape=[None, None, None, 3], dtype=tf.float32)
 
@@ -85,19 +86,81 @@ class PatchGAN:
         :param input: The input placeholder to the generator
         :return: The output tensor from the generator forward pass
         """
-        raise NotImplementedError()
+        # Build a UNet Generator
+        # Copied from work in UNet.py
+        def upsample_and_concat(x1, x2, output_channels, in_channels):
+            pool_size = 2
+            deconv_filter = tf.Variable(
+                tf.truncated_normal([pool_size, pool_size, output_channels, in_channels], stddev=0.02))
+            deconv = tf.nn.conv2d_transpose(x1, deconv_filter, tf.shape(x2), strides=[1, pool_size, pool_size, 1])
+
+            deconv_output = tf.concat([deconv, x2], 3)
+            deconv_output.set_shape([None, None, None, output_channels * 2])
+
+            return deconv_output
+
+        conv1 = slim.conv2d(input, 32, [3, 3], rate=1, activation_fn=tf.nn.elu, scope='g_conv1_1')
+        conv1 = slim.conv2d(conv1, 32, [3, 3], rate=1, activation_fn=tf.nn.elu, scope='g_conv1_2')
+        pool1 = slim.max_pool2d(conv1, [2, 2], padding='SAME')
+
+        conv2 = slim.conv2d(pool1, 64, [3, 3], rate=1, activation_fn=tf.nn.elu, scope='g_conv2_1')
+        conv2 = slim.conv2d(conv2, 64, [3, 3], rate=1, activation_fn=tf.nn.elu, scope='g_conv2_2')
+        pool2 = slim.max_pool2d(conv2, [2, 2], padding='SAME')
+
+        conv3 = slim.conv2d(pool2, 128, [3, 3], rate=1, activation_fn=tf.nn.elu, scope='g_conv3_1')
+        conv3 = slim.conv2d(conv3, 128, [3, 3], rate=1, activation_fn=tf.nn.elu, scope='g_conv3_2')
+        pool3 = slim.max_pool2d(conv3, [2, 2], padding='SAME')
+
+        conv4 = slim.conv2d(pool3, 256, [3, 3], rate=1, activation_fn=tf.nn.elu, scope='g_conv4_1')
+        conv4 = slim.conv2d(conv4, 256, [3, 3], rate=1, activation_fn=tf.nn.elu, scope='g_conv4_2')
+        pool4 = slim.max_pool2d(conv4, [2, 2], padding='SAME')
+
+        conv5 = slim.conv2d(pool4, 512, [3, 3], rate=1, activation_fn=tf.nn.elu, scope='g_conv5_1')
+        conv5 = slim.conv2d(conv5, 512, [3, 3], rate=1, activation_fn=tf.nn.elu, scope='g_conv5_2')
+
+        up6 = upsample_and_concat(conv5, conv4, 256, 512)
+        conv6 = slim.conv2d(up6, 256, [3, 3], rate=1, activation_fn=tf.nn.elu, scope='g_conv6_1')
+        conv6 = slim.conv2d(conv6, 256, [3, 3], rate=1, activation_fn=tf.nn.elu, scope='g_conv6_2')
+
+        up7 = upsample_and_concat(conv6, conv3, 128, 256)
+        conv7 = slim.conv2d(up7, 128, [3, 3], rate=1, activation_fn=tf.nn.elu, scope='g_conv7_1')
+        conv7 = slim.conv2d(conv7, 128, [3, 3], rate=1, activation_fn=tf.nn.elu, scope='g_conv7_2')
+
+        up8 = upsample_and_concat(conv7, conv2, 64, 128)
+        conv8 = slim.conv2d(up8, 64, [3, 3], rate=1, activation_fn=tf.nn.elu, scope='g_conv8_1')
+        conv8 = slim.conv2d(conv8, 64, [3, 3], rate=1, activation_fn=tf.nn.elu, scope='g_conv8_2')
+
+        up9 = upsample_and_concat(conv8, conv1, 32, 64)
+
+        conv9 = slim.conv2d(up9, 32, [3, 3], rate=1, activation_fn=tf.nn.elu, scope='g_conv9_1')
+        conv9 = slim.conv2d(conv9, 32, [3, 3], rate=1, activation_fn=tf.nn.elu, scope='g_conv9_2')
+
+        conv10 = slim.conv2d(conv9, 3, [1, 1], rate=1, activation_fn=None, scope='g_conv10')
+
+        return conv10
 
     def _build_discriminator(self, input, label):
         """
         Builds the graph for the discriminator
         :param input: The input that was handed to the generator
         :param label: The ground truth image that we are trying to translate to,
-        can be an output from the generator
+        can be an output from the generatord
         :return: The output of the discriminator, a feature map where each pixel is a score
         for the realism of the image translation
         """
         # We reuse the weights to get the same discriminator both times
-        raise NotImplementedError()
+        # Simple convnet for the discriminator
+        lrelu = tf.nn.leaky_relu
+        conv = tf.layers.conv2d
+        batch_norm = tf.layers.batch_normalization
+
+        output = lrelu(conv(input, 64, 3, name="discriminator_conv1"))
+        output = lrelu(batch_norm(conv(output, 128, 3, name="discriminator_conv2")))
+        output = lrelu(batch_norm(conv(output, 256, 3, name="discriminator_conv3")))
+        output = lrelu(batch_norm(conv(output, 512, 3, name="discriminator_conv4")))
+
+        # This is a feature map that we average over for scoring generator
+        return output
 
     def evaluate(self):
         raise NotImplementedError()
@@ -110,3 +173,7 @@ class PatchGAN:
 
     def save_model(self):
         raise NotImplementedError()
+
+
+if __name__ == '__main__':
+    model = PatchGAN()
