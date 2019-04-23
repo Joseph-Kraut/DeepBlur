@@ -60,11 +60,11 @@ class PatchGAN:
             else:
                 # The generator loss
                 self.generator_loss = l2_penalty * tf.linalg.norm(self.generator_output - self.generator_labels)
-                self.generator_loss += -tf.reduce_sum(tf.log(tf.nn.sigmoid(discriminator_fake_output)))
+                self.generator_loss += -tf.reduce_mean(tf.log(tf.nn.sigmoid(discriminator_fake_output)))
 
                 # The discriminator loss
-                self.discriminator_loss = tf.reduce_sum(tf.nn.sigmoid(discriminator_fake_output))
-                self.discriminator_loss -= tf.reduce_sum(tf.log(tf.nn.sigmoid(discriminator_real_output)))
+                self.discriminator_loss = tf.reduce_mean(tf.nn.sigmoid(discriminator_fake_output))
+                self.discriminator_loss -= tf.reduce_mean(tf.log(tf.nn.sigmoid(discriminator_real_output)))
 
 
             # Optimizers and train ops
@@ -162,18 +162,34 @@ class PatchGAN:
         # This is a feature map that we average over for scoring generator
         return output
 
-    def evaluate(self):
-        raise NotImplementedError()
+    def evaluate(self, inputs, labels):
+        """
+        Computes generator losses on inputs and labels
+        :param inputs: The inputs to pass into the generator
+        :param labels: The labels to pass to the generator
+        :return: The loss on these inputs
+        """
+        feed_dict = {
+            self.generator_input: inputs,
+            self.generator_labels: labels,
+        }
 
-    def predict(self):
-        raise NotImplementedError()
+        return self.sess.run(self.generator_loss, feed_dict=feed_dict)
+
+    def predict(self, inputs):
+        """
+        Performs a forward pass through the generator to get an image translation
+        :param inputs: The inputs to pass through the generator
+        :return: The generator output
+        """
+
+        feed_dict = {
+            self.generator_input: inputs
+        }
+        return self.sess.run(self.generator_output, feed_dict=feed_dict)
 
     def train_step(self):
         raise NotImplementedError()
 
     def save_model(self):
         raise NotImplementedError()
-
-
-if __name__ == '__main__':
-    model = PatchGAN()
