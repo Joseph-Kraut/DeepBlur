@@ -8,6 +8,7 @@ import UNet
 
 model = UNet.UNet(pretrained=True)
 blur_dir = '../data/labelled_patches/blurred'
+sharp_dir = '../data/labelled_patches/sharp'
 predict_dir = '../data/predictions'
 blurry_files = os.listdir(blur_dir)[0:10]
 blurry_inputs = []
@@ -19,7 +20,11 @@ for filename in blurry_files:
     with Image.open(os.path.join(blur_dir, filename), 'r') as blurry:
         blurry_inputs.append(np.array(blurry))
         blurry.save(os.path.join(predict_dir,
-            '{0}'.format(filename)),
+            'blurry_{0}'.format(filename)),
+            'PNG')
+    with Image.open(os.path.join(sharp_dir, filename), 'r') as sharp:
+        sharp.save(os.path.join(predict_dir,
+            'sharp_{0}'.format(filename)),
             'PNG')
 
 blurry_inputs = np.array(blurry_inputs)

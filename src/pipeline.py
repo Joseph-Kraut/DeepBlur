@@ -9,7 +9,7 @@ def build_batch(blur_dir, truth_dir, batch_size):
     """
     Generates a mini-batch of numpy arrays; uses a generator to truly create epochs.
     IMPORTANT: Assumes truth_dir contains exactly the same set of file names as truth_dir, where the
-    files are the corresponding truth image samples. 
+    files are the corresponding truth image samples.
 
     Returns:
         data_batch = List[np.array], of size batch_size, containing blurred image pixel arrays.
@@ -32,7 +32,8 @@ def build_batch(blur_dir, truth_dir, batch_size):
             yield np.array(blur_batch), np.array(truth_batch)
 
 
-def train_model(model, train_steps, blur_dir, truth_dir, batch_size=16, print_every=1, save=True, graph=False):
+def train_model(model, train_steps, blur_dir, truth_dir, batch_size=16,
+                print_every=1, save=True, graph=False):
     """
     Trains a given model on training data
     :param model: The model to train
@@ -47,6 +48,7 @@ def train_model(model, train_steps, blur_dir, truth_dir, batch_size=16, print_ev
 
     # Loop over the training steps
     with open("training_log.txt", "w+") as logfile:
+      try:
         for train_step in range(train_steps):
             # Sample a batch
             input_batch, labels_batch = next(batch_generator)
@@ -57,15 +59,17 @@ def train_model(model, train_steps, blur_dir, truth_dir, batch_size=16, print_ev
             # Take a train step on this batch
             loss_value = model.train_step(input_batch, labels_batch)
 
-            # Possibly print the loss
+            # Print the loss if desired
             if train_step % print_every == 0:
                 print(f"Loss on train step {train_step}: {loss_value}\n")
                 logfile.write(f"Loss on train step {train_step}: {loss_value}\n")
-            if save and train_step % 10 == 0:
+            if train_step % 10 == 0:
                 logfile.flush()
-                model.save_model()
 
             losses += [loss_value]
+      except Exception as e:
+        logfile.write(str(e))
+        raise
 
     if save:
         model.save_model()

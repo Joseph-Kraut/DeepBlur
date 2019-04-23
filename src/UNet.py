@@ -90,6 +90,11 @@ class UNet:
 
         self.output = conv10
 
+        # Moving loss to here so that it is only defined once
+        # self.loss = tf.losses.absolute_difference(self.labels, self.output) \
+        #     + 1000.0 * tf.math.count_nonzero(tf.less(self.labels, 0.1), dtype='float32')
+        self.loss = tf.losses.absolute_difference(self.labels,
+            self.output + 1000.0 * (self.output * tf.dtypes.cast(tf.less(self.labels, 0.1), 'float32')))
         # Load pre-trained weights
         if pretrained:
             # This gets all the weights except all the 10th layer or first layer filters
@@ -115,8 +120,6 @@ class UNet:
             self.sess.run(conv1_weights.assign(first_layer_weights))
 
             # Build the loss and frozen optimizer
-            self.loss = tf.losses.mean_squared_error(self.labels, self.output) \
-                + tf.losses.mean_pairwise_squared_error(self.labels, self.output)
             optimizer = tf.train.RMSPropOptimizer(learning_rate)
 
             # Get the variables that we will train in pretrained model
@@ -128,7 +131,6 @@ class UNet:
         else:
             # If we aren't using pre-trained weights then we can just skip this part
             self.sess.run(tf.global_variables_initializer())
-            self.loss = tf.losses.mean_squared_error(self.labels, self.output)
             optimizer = tf.train.RMSPropOptimizer(learning_rate)
             self.train_op = optimizer.minimize(self.loss)
 
@@ -174,7 +176,8 @@ class UNet:
             self.labels: ground_truth
         }
 
-        loss_value, _ = self.sess.run((self.loss, self.train_op), feed_dict=feed_dict)
+        loss_value, _ = self.sess.run((self.loss, self.train_op), feed_dict=feed_dict,
+          config=tf.ConfigProto(log_device_placement=True))
         return loss_value
 
     def save_model(self):
