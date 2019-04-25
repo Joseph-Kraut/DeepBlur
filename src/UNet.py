@@ -32,9 +32,7 @@ class UNet:
         """
         # Cleanup graph
         tf.reset_default_graph()
-        config = tf.ConfigProto(log_device_placement=True)
-        config.gpu_options.allow_growth = True
-        self.sess = tf.Session(config=config)
+        self.sess = tf.Session()
         # Placeholders for inputs and labels
         # with tf.device('/device:GPU:0'):
         self.input_placeholder = tf.placeholder(dtype=tf.float32, shape=[None, None, None, 1])
@@ -88,15 +86,14 @@ class UNet:
         conv9 = slim.conv2d(up9, 32, [3, 3], rate=1, activation_fn=tf.nn.elu, scope='g_conv9_1')
         conv9 = slim.conv2d(conv9, 32, [3, 3], rate=1, activation_fn=tf.nn.elu, scope='g_conv9_2')
 
-        conv10 = slim.conv2d(conv9, 1, [1, 1], rate=1, activation_fn=None, scope='g_conv10')
+        conv10 = slim.conv2d(conv9, 1, [1, 1], rate=1, activation_fn=tf.nn.tanh, scope='g_conv10')
 
-        self.output = conv10
+        self.output = (conv10 + 1.0) * 127.5
 
         # Moving loss to here so that it is only defined once
         # self.loss = tf.losses.absolute_difference(self.labels, self.output) \
         #     + 1000.0 * tf.math.count_nonzero(tf.less(self.labels, 0.1), dtype='float32')
-        self.loss = tf.losses.absolute_difference(self.labels,
-            self.output + 1000.0 * (self.output * tf.dtypes.cast(tf.less(self.labels, 0.1), 'float32')))
+        self.loss = tf.losses.absolute_difference(self.labels, self.output)
         # Load pre-trained weights
         if pretrained:
             # This gets all the weights except all the 10th layer or first layer filters

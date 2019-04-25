@@ -33,7 +33,7 @@ def build_batch(blur_dir, truth_dir, batch_size):
 
 
 def train_model(model, train_steps, blur_dir, truth_dir, batch_size=16,
-                print_every=1, save=True, graph=False):
+                print_every=10, save=True, graph=False):
     """
     Trains a given model on training data
     :param model: The model to train
@@ -55,7 +55,6 @@ def train_model(model, train_steps, blur_dir, truth_dir, batch_size=16,
             # H4x0rs
             input_batch = np.reshape(input_batch, (*input_batch.shape, 1))
             labels_batch = np.reshape(input_batch, (*labels_batch.shape, 1))
-            print(input_batch.shape)
             # Take a train step on this batch
             loss_value = model.train_step(input_batch, labels_batch)
 

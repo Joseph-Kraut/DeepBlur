@@ -10,7 +10,7 @@ model = UNet.UNet(pretrained=True)
 blur_dir = '../data/labelled_patches/blurred'
 sharp_dir = '../data/labelled_patches/sharp'
 predict_dir = '../data/predictions'
-blurry_files = os.listdir(blur_dir)[0:10]
+blurry_files = os.listdir(blur_dir)[10:20]
 blurry_inputs = []
 
 for filename in os.listdir(predict_dir):
