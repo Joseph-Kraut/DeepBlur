@@ -19,6 +19,15 @@ def build_batch(blur_dir, truth_dir, batch_size):
     n = len(filenames)
     # Allow ourselves to loop infinitely over a dataset
     while True:
+        # Scrub scrub
+        # for filename in filenames:
+        #     with Image.open(os.path.join(truth_dir, filename), 'r') as blurry:
+        #         if np.array(blurry).shape != (300, 300, 3):
+        #             print(np.array(blurry).shape)
+        #             print(filename)
+        #             os.remove(os.path.join(blur_dir, filename))
+        #             os.remove(os.path.join(truth_dir, filename))
+        # raise Exception
         # Shuffle is in-place
         np.random.shuffle(filenames)
         for i in range(0, n, batch_size):
@@ -53,9 +62,10 @@ def train_model(model, train_steps, blur_dir, truth_dir, batch_size=16,
             # Sample a batch
             input_batch, labels_batch = next(batch_generator)
             # H4x0rs
-            input_batch = np.reshape(input_batch, (*input_batch.shape, 1))
-            labels_batch = np.reshape(input_batch, (*labels_batch.shape, 1))
+            # input_batch = np.reshape(input_batch, (*input_batch.shape, 1))
+            # labels_batch = np.reshape(input_batch, (*labels_batch.shape, 1))
             # Take a train step on this batch
+            print(input_batch.shape)
             loss_value = model.train_step(input_batch, labels_batch)
 
             # Print the loss if desired

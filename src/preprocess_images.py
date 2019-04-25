@@ -34,7 +34,7 @@ def gaussian_blur_kernel(kernel_size, standard_deviation):
     return kernel
 
 
-def blur(image, number_filters=10, standard_deviation=50):
+def blur(image, number_filters=1, standard_deviation=50):
     """
     Blurs the images by passing multiple gaussian blur filters over and averaging
     :param image: A numpy array corresponding to the image
@@ -43,7 +43,8 @@ def blur(image, number_filters=10, standard_deviation=50):
         - The blurred image
         - The kernels used to blur stacked depth wise
     """
-    filter_sizes = [3, 5, 7, 9, 11]
+    # filter_sizes = [3, 5, 7, 9, 11]
+    filter_sizes = [5]
     filter_probabilities = [0.45, 0.45, 0.1]
 
     # Loop over the number of filters
@@ -122,9 +123,9 @@ def main():
     Iterates over images in dataset to process them
     :return: None
     """
-    ALREADY_BLURRED = True #Set to true if you want to blur new images
+    ALREADY_BLURRED = False # Indicate if images are already blurred
     SAMPLE_RES = 300 #The resolution (side length) of the square patches
-    MAX_STRIDE = 180 #How much each sample overlaps by determines overlap
+    MAX_STRIDE = 180 # Pixel overlap between samples
     CLEAR_SAVE_DIR = True # Deletes pre-existing files in save directory
 
     sharp_img_dir = "../data/raw_images/ground_truth" #Assumes ground truth files or unblurred imgs stored here
@@ -141,14 +142,14 @@ def main():
             os.unlink(os.path.join(truth_save_dir, filename))
 
     if ALREADY_BLURRED:
-        blurred_img_filenames = [join(blurred_img_dir, f) for f in sorted(listdir(blurred_img_dir))[:1000] if isfile(join(blurred_img_dir, f))]
-        sharp_img_filenames = [join(sharp_img_dir, f) for f in sorted(listdir(sharp_img_dir))[:1000] if isfile(join(sharp_img_dir, f))]
+        blurred_img_filenames = [join(blurred_img_dir, f) for f in sorted(listdir(blurred_img_dir))[:500] if isfile(join(blurred_img_dir, f))]
+        sharp_img_filenames = [join(sharp_img_dir, f) for f in sorted(listdir(sharp_img_dir))[:500] if isfile(join(sharp_img_dir, f))]
         # Somewhat important note: don't kill this process in its loop or there may be a botched trailing image
         for sharp_img, blurred_img in zip(sharp_img_filenames, blurred_img_filenames):
             get_samples(sharp_img, SAMPLE_RES, MAX_STRIDE, should_blur=False, output_dir=truth_save_dir)
             get_samples(blurred_img, SAMPLE_RES, MAX_STRIDE, should_blur=False, output_dir=blur_save_dir)
     else:
-        sharp_img_filenames = [join(sharp_img_dir, f) for f in listdir(sharp_img_dir) if isfile(join(sharp_img_dir, f))]
+        sharp_img_filenames = [join(sharp_img_dir, f) for f in listdir(sharp_img_dir)[:100] if isfile(join(sharp_img_dir, f))]
         for sharp_img in sharp_img_filenames:
             get_samples(sharp_img, SAMPLE_RES, MAX_STRIDE, should_blur=False, output_dir=truth_save_dir)
             get_samples(sharp_img, SAMPLE_RES, MAX_STRIDE, should_blur=True, output_dir=blur_save_dir)

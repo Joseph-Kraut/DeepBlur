@@ -10,7 +10,9 @@ model = UNet.UNet(pretrained=True)
 blur_dir = '../data/labelled_patches/blurred'
 sharp_dir = '../data/labelled_patches/sharp'
 predict_dir = '../data/predictions'
-blurry_files = os.listdir(blur_dir)[10:20]
+blurry_files = os.listdir(blur_dir)
+print(len(blurry_files))
+exit()
 blurry_inputs = []
 
 for filename in os.listdir(predict_dir):
@@ -28,7 +30,7 @@ for filename in blurry_files:
             'PNG')
 
 blurry_inputs = np.array(blurry_inputs)
-blurry_inputs = np.reshape(blurry_inputs, (*blurry_inputs.shape, 1))
+# blurry_inputs = np.reshape(blurry_inputs, (*blurry_inputs.shape, 1))
 print(blurry_inputs)
 predictions = model.predict(np.array(blurry_inputs))
 print(predictions)
@@ -37,7 +39,7 @@ makeint = lambda x: 0 if x < 0 else int(x)
 vmakeint = np.vectorize(makeint)
 for index,item in enumerate(predictions):
     item = vmakeint(item)
-    item = np.reshape(item.astype(np.uint8), (300,300))
+    item = np.reshape(item.astype(np.uint8), (300,300,3))
     print(item.astype(np.uint8))
     with scipy.misc.toimage(item.astype(np.uint8)) as image:
         image.save(os.path.join(predict_dir,
