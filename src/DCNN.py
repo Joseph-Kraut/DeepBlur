@@ -1,5 +1,5 @@
 import tensorflow as tf
-import tensorflow.layers as layers
+from tensorflow import layers
 
 class DCNN:
     """
@@ -45,29 +45,35 @@ class DCNN:
 
 
         #Build Deconvolution CNN (2 hidden layers + an output)
-        conv1 = layers.conv2d(self.input_placeholder, 38, (1, 121), 1, "same", activation=tf.nn.tanh, name="dcnn1")
+        conv1_obj = layers.Conv2D(38, (1, 121), 1, "same", activation=tf.nn.tanh, name="dcnn1")
+        conv1 = conv1_obj.apply(self.input_placeholder)
 
-        conv2 = layers.conv2d(conv1, 38, (121, 1), 1, "same", activation=tf.nn.tanh, name="dcnn2")
+        conv2_obj = layers.Conv2D(38, (121, 1), 1, "same", activation=tf.nn.tanh, name="dcnn2")
+        conv2 = conv2_obj.apply(conv1)
 
-        conv3 = layers.conv2d(conv2, 1, (1, 1), 1, "same", activation=None, name="dcnn3")
+        conv3_obj = layers.Conv2D(1, (1, 1), 1, "same", activation=None, name="dcnn3")
+        conv3 = conv3_obj.apply(conv2)
 
         self.intermediate_representation = conv3
 
         #Build Outlier-rejection Deconvolution CNN (using outputs of DCNN as inputs)
-        conv4 = layers.conv2d(self.intermediate_representation, 512, (16, 16), 1, "same", activation=tf.nn.tanh, name="odcnn1")
+        conv4_obj = layers.Conv2D(512, (16, 16), 1, "same", activation=tf.nn.tanh, name="odcnn1")
+        conv4 = conv4_obj.apply(self.intermediate_representation)
 
-        conv5 = layers.conv2d(conv4, 512, (1, 1), 1, "same", activation=tf.nn.tanh, name="odcnn2")
+        conv5_obj = layers.Conv2D(512, (1, 1), 1, "same", activation=tf.nn.tanh, name="odcnn2")
+        conv5 = conv5_obj.apply(conv4)
 
-        conv6 = layers.conv2d(conv5, 1, (8,8), 1, "same", activation=None, name="odcnn3")
+        conv6_obj = layers.Conv2D(1, (8,8), 1, "same", activation=None, name="odcnn3")
+        conv6 = conv6_obj.apply(conv5)
 
         self.output = conv6
 
         dcnn_vars, odcnn_vars = [], []
 
-        for dcnn_conv_layer in [conv1, conv2, conv3]:
+        for dcnn_conv_layer in [conv1_obj, conv2_obj, conv3_obj]:
             dcnn_vars.extend(dcnn_conv_layer.variables)
 
-        for odcnn_conv_layer in [conv4, conv5, conv6]:
+        for odcnn_conv_layer in [conv4_obj, conv5_obj, conv6_obj]:
             odcnn_vars.extend(odcnn_conv_layer.variables)
 
         # Load pre-trained weights
