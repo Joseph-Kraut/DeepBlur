@@ -73,10 +73,10 @@ def train_model(model, train_steps, blur_dir, truth_dir, batch_size=16, resoluti
                 logfile.write(f"Loss on train step {train_step}: {loss_value}\n")
             if train_step % 10 == 0:
                 logfile.flush()
-
             losses += [loss_value]
       except Exception as e:
         logfile.write(str(e))
+        logfile.flush()
         raise
 
     if save:
