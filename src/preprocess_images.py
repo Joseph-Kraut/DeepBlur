@@ -34,7 +34,7 @@ def gaussian_blur_kernel(kernel_size, standard_deviation):
     return kernel
 
 
-def blur(image, number_filters=10, standard_deviation=50):
+def blur(image, number_filters=5, standard_deviation=50):
     """
     Blurs the images by passing multiple gaussian blur filters over and averaging
     :param image: A numpy array corresponding to the image
@@ -113,7 +113,8 @@ def get_samples(filename, sample_res, max_stride, should_blur=False, output_dir=
                                     'PNG')
                     sample_num += 1
 
-        print('Sampling for image {0} complete'.format(filename))
+        sample_type = 'Blurry' if should_blur else 'Sharp'
+        print(f'{sample_type} sampling for image {filename} complete')
     return
 
 
@@ -122,17 +123,17 @@ def main():
     Iterates over images in dataset to process them
     :return: None
     """
-    ALREADY_BLURRED = True #Set to true if you want to blur new images
-    SAMPLE_RES = 300 #The resolution (side length) of the square patches
-    MAX_STRIDE = 180 #How much each sample overlaps by determines overlap
+    SHOULD_BLUR = True #
+    SAMPLE_RES = 192 #The resolution (side length) of the square patches
+    MAX_STRIDE = 128 #How much each sample overlaps by
     CLEAR_SAVE_DIR = True # Deletes pre-existing files in save directory
 
-    sharp_img_dir = "../data/raw_images/ground_truth" #Assumes ground truth files or unblurred imgs stored here
-    blurred_img_dir = "../data/raw_images/blurry" #Assumes blurred files (if already blurred) stored here
+    sharp_img_dir = "../data/raw_ground_truth" #Assumes ground truth files or unblurred imgs stored here
+    blurred_img_dir = "../data/raw_blurry" #Assumes blurred files (if already blurred) stored here
     #NOTE: blurred image filenames should end (last chars after a "/" or "_") with the same name as unblurred images
 
-    blur_save_dir = "../data/labelled_patches/blurred" #Where blurred images should be saved
-    truth_save_dir = "../data/labelled_patches/sharp" #Where unblurred images should be saved
+    blur_save_dir = "../data/labelled_blurry" #Where blurred images should be saved
+    truth_save_dir = "../data/labelled_ground_truth" #Where unblurred images should be saved
 
     if CLEAR_SAVE_DIR:
         for filename in listdir(blur_save_dir):
@@ -140,7 +141,7 @@ def main():
         for filename in listdir(truth_save_dir):
             os.unlink(os.path.join(truth_save_dir, filename))
 
-    if ALREADY_BLURRED:
+    if not SHOULD_BLUR:
         blurred_img_filenames = [join(blurred_img_dir, f) for f in sorted(listdir(blurred_img_dir))[:1000] if isfile(join(blurred_img_dir, f))]
         sharp_img_filenames = [join(sharp_img_dir, f) for f in sorted(listdir(sharp_img_dir))[:1000] if isfile(join(sharp_img_dir, f))]
         # Somewhat important note: don't kill this process in its loop or there may be a botched trailing image

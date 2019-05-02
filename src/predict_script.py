@@ -7,10 +7,10 @@ import tensorflow as tf
 import UNet
 
 model = UNet.UNet(pretrained=True)
-blur_dir = '../data/labelled_patches/blurred'
-sharp_dir = '../data/labelled_patches/sharp'
+blur_dir = '../data/raw_blurry'
+sharp_dir = '../data/raw_ground_truth'
 predict_dir = '../data/predictions'
-blurry_files = os.listdir(blur_dir)[10:20]
+blurry_files = os.listdir(blur_dir)[0:10]
 blurry_inputs = []
 
 for filename in os.listdir(predict_dir):
@@ -27,20 +27,26 @@ for filename in blurry_files:
             'sharp_{0}'.format(filename)),
             'PNG')
 
-blurry_inputs = np.array(blurry_inputs)
-blurry_inputs = np.reshape(blurry_inputs, (*blurry_inputs.shape, 1))
-print(blurry_inputs)
+blurry_inputs = (np.array(blurry_inputs) / 127.5)  - 1.0
+# blurry_inputs = np.reshape(blurry_inputs, (*blurry_inputs.shape, 1))
+print(blurry_inputs.shape)
+np.save('../data/blurry', blurry_inputs)
 predictions = model.predict(np.array(blurry_inputs))
+predictions = (predictions + 1.0) / 2.0
 print(predictions)
+np.save('../data/predict', predictions)
 
 makeint = lambda x: 0 if x < 0 else int(x)
 vmakeint = np.vectorize(makeint)
 for index,item in enumerate(predictions):
-    item = vmakeint(item)
-    item = np.reshape(item.astype(np.uint8), (300,300))
-    print(item.astype(np.uint8))
-    with scipy.misc.toimage(item.astype(np.uint8)) as image:
-        image.save(os.path.join(predict_dir,
+    # item = np.reshape(item, (res, res, 3))
+    holder1, holder2 = item[:, :, 0], item[:, :, 2]
+    item[:, :, 0], item[:, :, 2] = holder2, holder1
+    scipy.misc.imsave(os.path.join(predict_dir,
                     'prediction_{0}'.format(blurry_files[index])),
-                    'PNG')
+                    item)
+    # with scipy.misc.toimage(item.astype(np.uint8)) as image:
+    #     image.save(os.path.join(predict_dir,
+    #                 'prediction_{0}'.format(blurry_files[index])),
+    #                 'PNG')
 

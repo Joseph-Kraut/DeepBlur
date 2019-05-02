@@ -5,7 +5,7 @@ from PIL import Image
 import matplotlib.pyplot as plt
 
 
-def build_batch(blur_dir, truth_dir, batch_size):
+def build_batch(blur_dir, truth_dir, batch_size, resolution=256):
     """
     Generates a mini-batch of numpy arrays; uses a generator to truly create epochs.
     IMPORTANT: Assumes truth_dir contains exactly the same set of file names as truth_dir, where the
@@ -26,13 +26,17 @@ def build_batch(blur_dir, truth_dir, batch_size):
             # Python list comp allows going past last iter
             for filename in filenames[i:i+batch_size]:
                 with Image.open(os.path.join(blur_dir, filename), 'r') as blurry:
-                    blur_batch.append(np.array(blurry))
+                    imagenp = np.array(blurry)
+                    if imagenp.shape == (resolution, resolution, 3):
+                        blur_batch.append(np.array(blurry))
                 with Image.open(os.path.join(truth_dir, filename), 'r') as truthy:
-                    truth_batch.append(np.array(truthy))
+                    imagenp = np.array(truthy)
+                    if imagenp.shape == (resolution, resolution, 3):
+                        truth_batch.append(np.array(truthy))
             yield np.array(blur_batch), np.array(truth_batch)
 
 
-def train_model(model, train_steps, blur_dir, truth_dir, batch_size=16,
+def train_model(model, train_steps, blur_dir, truth_dir, batch_size=16, resolution=256,
                 print_every=10, save=True, graph=False):
     """
     Trains a given model on training data
@@ -43,7 +47,7 @@ def train_model(model, train_steps, blur_dir, truth_dir, batch_size=16,
     :return: None
     """
     # Build the batch generator
-    batch_generator = build_batch(blur_dir, truth_dir, batch_size)
+    batch_generator = build_batch(blur_dir, truth_dir, batch_size, resolution=resolution)
     losses = []
 
     # Loop over the training steps
@@ -52,9 +56,14 @@ def train_model(model, train_steps, blur_dir, truth_dir, batch_size=16,
         for train_step in range(train_steps):
             # Sample a batch
             input_batch, labels_batch = next(batch_generator)
+            print(input_batch.shape)
+            print(labels_batch.shape)
+            input_batch = (input_batch / 127.5) - 1.0
+            labels_batch = (labels_batch / 127.5) - 1.0
             # H4x0rs
-            input_batch = np.reshape(input_batch, (*input_batch.shape, 1))
-            labels_batch = np.reshape(input_batch, (*labels_batch.shape, 1))
+            # input_batch = np.reshape(input_batch, (*input_batch.shape, 1))
+            # labels_batch = np.reshape(input_batch, (*labels_batch.shape, 1))
+
             # Take a train step on this batch
             loss_value = model.train_step(input_batch, labels_batch)
 
