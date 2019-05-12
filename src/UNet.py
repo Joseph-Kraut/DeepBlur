@@ -2,6 +2,8 @@ import tensorflow as tf
 import tensorflow.contrib.slim as slim
 from tensorflow.python import pywrap_tensorflow
 
+import numpy as np
+
 class UNet:
     """
     This class implements a UNet from https://bit.ly/2UAvptW
@@ -13,7 +15,7 @@ class UNet:
         :param pretrained: Whether or not to use pretrained weights
         :param learning_rate: The learning rate for training
         """
-
+        self.train_steps = 0
         # Printout
         if pretrained:
             print("Building saved UNet model...")
@@ -34,7 +36,7 @@ class UNet:
         tf.reset_default_graph()
         self.sess = tf.Session()
         # Placeholders for inputs and labels
-        # with tf.device('/device:GPU:0'):
+        # Replace 1 with 3 if color
         self.input_placeholder = tf.placeholder(dtype=tf.float32, shape=[None, None, None, 3])
         self.labels = tf.placeholder(dtype=tf.float32, shape=[None, None, None, 3])
 
@@ -42,7 +44,7 @@ class UNet:
         def upsample_and_concat(x1, x2, output_channels, in_channels):
             pool_size = 2
             deconv_filter = tf.Variable(
-                tf.truncated_normal([pool_size, pool_size, output_channels, in_channels], stddev=0.02))
+                tf.truncated_normal([pool_size, pool_size, output_channels, in_channels], stddev=0.04))
             deconv = tf.nn.conv2d_transpose(x1, deconv_filter, tf.shape(x2), strides=[1, pool_size, pool_size, 1])
 
             deconv_output = tf.concat([deconv, x2], 3)
@@ -86,6 +88,7 @@ class UNet:
         conv9 = slim.conv2d(up9, 32, [3, 3], rate=1, activation_fn=tf.nn.elu, scope='g_conv9_1')
         conv9 = slim.conv2d(conv9, 32, [3, 3], rate=1, activation_fn=tf.nn.elu, scope='g_conv9_2')
 
+        # Replace 1 in 2nd arg with 3 if color
         conv10 = slim.conv2d(conv9, 3, [1, 1], rate=1, activation_fn=tf.nn.tanh, scope='g_conv10')
 
         # self.output = (conv10 + 1.0) * 127.5
@@ -94,7 +97,7 @@ class UNet:
         # Moving loss to here so that it is only defined once
         # self.loss = tf.losses.absolute_difference(self.labels, self.output) \
         #     + 1000.0 * tf.math.count_nonzero(tf.less(self.labels, 0.1), dtype='float32')
-        self.loss = tf.losses.absolute_difference(self.labels, self.output)
+        self.loss = tf.losses.absolute_difference(self.labels, self.output) + tf.losses.mean_squared_error(self.labels, self.output)
         # Load pre-trained weights
         if pretrained:
             # This gets all the weights except all the 10th layer or first layer filters
@@ -120,6 +123,10 @@ class UNet:
             self.sess.run(conv1_weights.assign(first_layer_weights))
 
             # Build the loss and frozen optimizer
+            global_step = tf.Variable(0, trainable=False)
+            starter_learning_rate = 0.001
+            learning_rate = tf.train.exponential_decay(starter_learning_rate, global_step,
+                                           1000, 0.96, staircase=True)
             optimizer = tf.train.RMSPropOptimizer(learning_rate)
 
             # Get the variables that we will train in pretrained model
@@ -171,12 +178,19 @@ class UNet:
         :param ground_truth: Ground truth labels for the forward pass
         :return: Loss on the training step in question
         """
+        self.train_steps += 1
         feed_dict = {
             self.input_placeholder: inputs,
             self.labels: ground_truth
         }
 
-        loss_value, _ = self.sess.run((self.loss, self.train_op), feed_dict=feed_dict)
+        loss_value, _, output = self.sess.run((self.loss, self.train_op, self.output), feed_dict=feed_dict)
+
+        if self.train_steps % 500 == 0:
+          np.save('training_results/in'.format(self.train_steps), inputs)
+          np.save('training_results/out'.format(self.train_steps), output)
+          np.save('training_results/truth'.format(self.train_steps), ground_truth)
+
         return loss_value
 
     def save_model(self):

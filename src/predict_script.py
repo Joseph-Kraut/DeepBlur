@@ -5,12 +5,15 @@ import scipy.misc
 import tensorflow as tf
 
 import UNet
+from pipeline import build_batch
+
+import copy
 
 model = UNet.UNet(pretrained=True)
 blur_dir = '../data/labelled_blurry'
 sharp_dir = '../data/labelled_ground_truth'
 predict_dir = '../data/predictions'
-blurry_files = os.listdir(blur_dir)[10:20]
+blurry_files = os.listdir(blur_dir)[0:10]
 blurry_inputs = []
 
 for filename in os.listdir(predict_dir):
@@ -27,21 +30,25 @@ for filename in blurry_files:
             'sharp_{0}'.format(filename)),
             'PNG')
 
+batch_generator = build_batch(blur_dir, sharp_dir, 10, resolution=128)
+blurry_inputs, sharp_batch = next(batch_generator)
 blurry_inputs = (np.array(blurry_inputs) / 127.5)  - 1.0
+np.save('../data/blurry.npy', blurry_inputs)
+# b&w Hack
 # blurry_inputs = np.reshape(blurry_inputs, (*blurry_inputs.shape, 1))
-print(blurry_inputs.shape)
-np.save('../data/blurry', blurry_inputs)
-predictions = model.predict(np.array(blurry_inputs))
+print(blurry_inputs[0])
+predictions = model.predict(blurry_inputs)
+print('prediction:')
 predictions = (predictions + 1.0) / 2.0
-print(predictions)
-np.save('../data/predict', predictions)
+np.save('../data/prediction.npy', predictions)
 
-makeint = lambda x: 0 if x < 0 else int(x)
-vmakeint = np.vectorize(makeint)
+
 for index,item in enumerate(predictions):
-    # item = np.reshape(item, (res, res, 3))
-    holder1, holder2 = item[:, :, 0], item[:, :, 2]
-    item[:, :, 0], item[:, :, 2] = holder2, holder1
+    # old_item = copy.deepcopy(item)
+    # holder1, holder2 = item[:, :, 0], item[:, :, 2]
+    # item[:, :, 0], item[:, :, 2] = holder2, holder1
+    # (res, res, 3) if color else (res, res)
+    print(item.shape)
     scipy.misc.imsave(os.path.join(predict_dir,
                     'prediction_{0}'.format(blurry_files[index])),
                     item)
