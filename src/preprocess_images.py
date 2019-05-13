@@ -34,7 +34,7 @@ def gaussian_blur_kernel(kernel_size, standard_deviation):
     return kernel
 
 
-def blur(image, number_filters=2, standard_deviation=50):
+def blur(image, number_filters=3, standard_deviation=50):
     """
     Blurs the images by passing multiple gaussian blur filters over and averaging
     :param image: A numpy array corresponding to the image
@@ -125,7 +125,7 @@ def main():
     :return: None
     """
     SHOULD_BLUR = True # Signal if images need to be blurred
-    SAMPLE_RES = 64 #The resolution (side length) of the square patches
+    SAMPLE_RES = 128 #The resolution (side length) of the square patches
     MAX_STRIDE = 32 #How much each sample overlaps by
     CLEAR_SAVE_DIR = True # Deletes pre-existing files in save directory
 
@@ -133,8 +133,8 @@ def main():
     blurred_img_dir = "../data/raw_blurry" #Assumes blurred files (if already blurred) stored here
     #NOTE: blurred image filenames should end (last chars after a "/" or "_") with the same name as unblurred images
 
-    blur_save_dir = "../data/labelled_blurry" #Where blurred images should be saved
-    truth_save_dir = "../data/labelled_ground_truth" #Where unblurred images should be saved
+    blur_save_dir = "../data/validation_blurry" #Where blurred images should be saved
+    truth_save_dir = "../data/validation_ground_truth" #Where unblurred images should be saved
 
     if CLEAR_SAVE_DIR:
         for filename in listdir(blur_save_dir):
@@ -150,7 +150,8 @@ def main():
             get_samples(sharp_img, SAMPLE_RES, MAX_STRIDE, should_blur=False, output_dir=truth_save_dir)
             get_samples(blurred_img, SAMPLE_RES, MAX_STRIDE, should_blur=False, output_dir=blur_save_dir)
     else:
-        sharp_img_filenames = [join(sharp_img_dir, f) for f in listdir(sharp_img_dir) if isfile(join(sharp_img_dir, f))]
+        print(len(listdir(sharp_img_dir)))
+        sharp_img_filenames = [join(sharp_img_dir, f) for f in listdir(sharp_img_dir)[750:] if isfile(join(sharp_img_dir, f))]
         for sharp_img in sharp_img_filenames:
             get_samples(sharp_img, SAMPLE_RES, MAX_STRIDE, should_blur=False, output_dir=truth_save_dir)
             get_samples(sharp_img, SAMPLE_RES, MAX_STRIDE, should_blur=True, output_dir=blur_save_dir)

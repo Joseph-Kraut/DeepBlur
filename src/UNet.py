@@ -159,17 +159,19 @@ class UNet:
 
         return self.sess.run(self.loss, feed_dict=feed_dict)
 
-    def predict(self, inputs):
+    def predict(self, inputs, ground_truth):
         """
         Outputs the result of the forward pass of inputs
         :param inputs: The input to forward pass through the network
         :return: The output of the forward pass
         """
         feed_dict = {
-            self.input_placeholder: inputs
+            self.input_placeholder: inputs,
+            self.labels: ground_truth
         }
 
-        return self.sess.run(self.output, feed_dict=feed_dict)
+        loss_value, output = self.sess.run((self.loss, self.output), feed_dict=feed_dict)
+        return loss_value, output
 
     def train_step(self, inputs, ground_truth):
         """
